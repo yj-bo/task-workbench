@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自动化任务工作台</title>
+<style>
+  :root {
+    --bg: #eef1f6;
+    --card: #ffffff;
+    --text: #1e2430;
+    --text-sub: #6b7280;
+    --line: #e6e9f0;
+    --blue: #3b82f6;
+    --blue-bg: #eaf2ff;
+    --green: #0ea47a;
+    --green-bg: #e6f7f1;
+    --purple: #8b5cf6;
+    --purple-bg: #f1edff;
+    --gray: #9aa3af;
+    --gray-bg: #f0f2f5;
+    --amber: #d97706;
+    --amber-bg: #fdf3e3;
+    --red: #e34d4d;
+    --red-bg: #fdecec;
+    --shadow: 0 1px 3px rgba(20,30,50,.06), 0 6px 18px rgba(20,30,50,.05);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 28px 24px 64px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  /* ===== Header ===== */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff;
+    box-shadow: 0 4px 12px rgba(59,130,246,.3);
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: .3px; }
+  .header .sub { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+  .date-chip {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    box-shadow: var(--shadow);
+  }
+
+  /* ===== Progress ===== */
+  .progress-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  .progress-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+  }
+  .progress-title { font-size: 14px; font-weight: 700; }
+  .progress-num { font-size: 13px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+  .progress-num b { color: var(--green); font-size: 16px; }
+  .bar { height: 10px; background: var(--gray-bg); border-radius: 999px; overflow: hidden; }
+  .bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 999px;
+    transition: width .4s ease;
+  }
+  .progress-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    font-size: 12px; font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+  .btn.primary { background: var(--blue-bg); color: var(--blue); border-color: transparent; }
+  .btn.primary:hover { background: var(--blue); color: #fff; }
+  .btn.danger:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+  /* ===== Stats ===== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .stat-ico {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .stat-ico.blue { background: var(--blue-bg); }
+  .stat-ico.green { background: var(--green-bg); }
+  .stat-ico.purple { background: var(--purple-bg); }
+  .stat-ico.gray { background: var(--gray-bg); }
+  .stat-info .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .stat-info .num.blue { color: var(--blue); }
+  .stat-info .num.green { color: var(--green); }
+  .stat-info .num.purple { color: var(--purple); }
+  .stat-info .num.gray { color: var(--text-sub); }
+  .stat-info .label { font-size: 12px; color: var(--text-sub); }
+
+  /* ===== Legend ===== */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 22px; font-size: 12px; color: var(--text-sub);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 16px;
+    box-shadow: var(--shadow);
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .chip-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .chip-dot.daily { background: var(--blue); }
+  .chip-dot.weekday { background: var(--green); }
+  .chip-dot.sunday { background: var(--purple); }
+  .chip-dot.paused { background: var(--gray); }
+
+  /* ===== Sections ===== */
+  .section { margin-bottom: 28px; }
+  .section-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .section-emoji {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+  .section-title { font-size: 16px; font-weight: 700; }
+  .section-count { font-size: 12px; color: var(--text-sub); background: var(--gray-bg); padding: 2px 10px; border-radius: 999px; }
+
+  /* ===== Task Grid ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 14px;
+  }
+  .task-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 15px 16px;
+    box-shadow: var(--shadow);
+    transition: transform .15s ease, box-shadow .15s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .task-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(20,30,50,.1); }
+  .task-card::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+  .task-card.daily::before { background: var(--blue); }
+  .task-card.weekday::before { background: var(--green); }
+  .task-card.sunday::before { background: var(--purple); }
+  .task-card.paused::before { background: var(--gray); }
+  .task-card.done { background: #f7fdfa; border-color: #cdeede; }
+  .task-card.done::after {
+    content: "✓";
+    position: absolute; right: 14px; top: 12px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 6px;
+    padding-right: 4px;
+  }
+  .task-time {
+    font-size: 19px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .5px;
+  }
+  .task-time small { font-size: 11px; font-weight: 600; color: var(--text-sub); margin-left: 2px; }
+  .badges { display: flex; gap: 6px; }
+  .badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge.daily { background: var(--blue-bg); color: var(--blue); }
+  .badge.weekday { background: var(--green-bg); color: var(--green); }
+  .badge.sunday { background: var(--purple-bg); color: var(--purple); }
+  .badge.paused { background: var(--gray-bg); color: var(--text-sub); }
+  .badge.multi { background: var(--amber-bg); color: var(--amber); }
+  .badge.hourly { background: var(--red-bg); color: var(--red); }
+
+  .task-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .task-desc { font-size: 12.5px; color: var(--text-sub); line-height: 1.55; }
+  .card-foot {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 10px;
+    font-size: 11.5px; color: var(--text-sub);
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+  .status-dot.off { background: var(--gray); box-shadow: 0 0 0 3px var(--gray-bg); }
+
+  /* Checkbox */
+  .check-wrap {
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px; font-weight: 600;
+    color: var(--text-sub);
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    transition: all .15s;
+  }
+  .check-wrap:hover { border-color: var(--green); color: var(--green); }
+  .check-wrap input { display: none; }
+  .check-box {
+    width: 15px; height: 15px;
+    border-radius: 4px;
+    border: 1.5px solid var(--gray);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .check-wrap input:checked + .check-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .check-wrap input:checked + .check-box::after { content: "✓"; color: #fff; font-size: 10px; font-weight: 700; }
+  .check-wrap.done { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+  .check-label { font-size: 12px; }
+
+  .footer {
+    margin-top: 30px; text-align: center;
+    font-size: 12px; color: var(--text-sub);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    body { padding: 20px 14px 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">⚙️</div>
+      <div>
+        <h1>自动化任务工作台</h1>
+        <div class="sub">每日研究与数据归档 · 全天任务总览</div>
+      </div>
+    </div>
+    <div class="date-chip" id="dateChip">📅 加载中…</div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-card">
+    <div class="progress-head">
+      <div class="progress-title">📊 今日完成进度</div>
+      <div class="progress-num" id="progressNum">0 / 12</div>
+    </div>
+    <div class="bar"><div class="bar-fill" id="progressBar"></div></div>
+    <div class="progress-actions">
+      <button class="btn primary" onclick="markAllDone()">✅ 全部标为完成</button>
+      <button class="btn" onclick="clearAll()">↺ 重置今日</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-ico blue">🗂️</div>
+      <div class="stat-info"><div class="num blue">13</div><div class="label">任务总数</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico green">▶️</div>
+      <div class="stat-info"><div class="num green">12</div><div class="label">运行中</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico purple">✅</div>
+      <div class="stat-info"><div class="num purple" id="statDone">0</div><div class="label">今日已完成</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico gray">⏳</div>
+      <div class="stat-info"><div class="num gray" id="statTodo">12</div><div class="label">待完成</div></div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="item"><span class="chip-dot daily"></span> 每天</div>
+    <div class="item"><span class="chip-dot weekday"></span> 工作日（周一~五）</div>
+    <div class="item"><span class="chip-dot sunday"></span> 周一~周六</div>
+    <div class="item"><span class="chip-dot paused"></span> 已暂停（不参与进度）</div>
+    <div class="item">✅ 点击卡片上的「完成」标记今日状态</div>
+  </div>
+
+  <!-- ===== 晨间 ===== -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-emoji">🌅</div>
+      <div class="section-title">晨间任务</div>
+      <span class="section-count">6 项 · 08:30 – 10:00</span>
+    </div>
+    <div class="grid">
+
+      <div class="task-card sunday" data-task="broker-morning">
+        <div class="card-top">
+          <div class="task-time">08:30</div>
+          <div class="badges"><span class="badge sunday">周一~六</span></div>
+        </div>
+        <div class="task-name">每日券商宏观固收日报（早间版）</div>
+        <div class="task-desc">汇总券商宏观与固收研报观点，生成早间日报</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="broker-morning"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card daily" data-task="gzh-morning">
+        <div class="card-top">
+          <div class="task-time">08:30</div>
+          <div class="badges"><span class="badge daily">每天</span><span class="badge multi">6 板块</span></div>
+        </div>
+        <div class="task-name">公众号每日两报 · 早报</div>
+        <div class="task-desc">隔夜海外 + 夜盘期货 + 盘前日历 + 板块提示，覆盖钢铁/宏观/固收/地产/期货/海外</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="gzh-morning"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card weekday" data-task="huatai-estate">
+        <div class="card-top">
+          <div class="task-time">09:00</div>
+          <div class="badges"><span class="badge weekday">工作日</span></div>
+        </div>
+        <div class="task-name">华泰地产邮件自动入库</div>
+        <div class="task-desc">自动抓取华泰地产研报邮件并入库整理</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="huatai-estate"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card daily" data-task="ima-sync">
+        <div class="card-top">
+          <div class="task-time">09:00</div>
+          <div class="badges"><span class="badge daily">每天</span></div>
+        </div>
+        <div class="task-name">ima 知识库本地每日同步</div>
+        <div class="task-desc">将 ima 知识库内容同步到本地目录</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="ima-sync"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card daily" data-task="black-translate">
+        <div class="card-top">
+          <div class="task-time">09:00<small>起</small></div>
+          <div class="badges"><span class="badge daily">每天</span><span class="badge hourly">整点 ×9</span></div>
+        </div>
+        <div class="task-name">黑色翻译自动处理</div>
+        <div class="task-desc">每小时自动处理黑色系翻译任务（09:00 – 17:00 整点触发，共 9 次）</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="black-translate"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card weekday" data-task="cicc-estate">
+        <div class="card-top">
+          <div class="task-time">09:10</div>
+          <div class="badges"><span class="badge weekday">工作日</span></div>
+        </div>
+        <div class="task-name">中金地产数据库自动入库</div>
+        <div class="task-desc">自动抓取中金地产数据库并入库更新</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="cicc-estate"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card daily" data-task="doc-archive-am">
+        <div class="card-top">
+          <div class="task-time">10:00</div>
+          <div class="badges"><span class="badge daily">每天</span></div>
+        </div>
+        <div class="task-name">中文文档归档 + 总结（上午）</div>
+        <div class="task-desc">整理归档中文文档并生成总结（上午批次）</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="doc-archive-am"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 午后 ===== -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-emoji">☀️</div>
+      <div class="section-title">午后任务</div>
+      <span class="section-count">6 项 · 16:30 – 18:00</span>
+    </div>
+    <div class="grid">
+
+      <div class="task-card daily" data-task="doc-archive-pm">
+        <div class="card-top">
+          <div class="task-time">16:30</div>
+          <div class="badges"><span class="badge daily">每天</span></div>
+        </div>
+        <div class="task-name">中文文档归档 + 总结（下午）</div>
+        <div class="task-desc">整理归档中文文档并生成总结（下午批次）</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="doc-archive-pm"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card weekday" data-task="black-translate-summary">
+        <div class="card-top">
+          <div class="task-time">16:40</div>
+          <div class="badges"><span class="badge weekday">工作日</span></div>
+        </div>
+        <div class="task-name">黑色翻译每日总结</div>
+        <div class="task-desc">汇总当日黑色翻译处理结果，生成日度总结</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="black-translate-summary"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card weekday" data-task="futures-dashboard">
+        <div class="card-top">
+          <div class="task-time">17:00</div>
+          <div class="badges"><span class="badge weekday">工作日</span></div>
+        </div>
+        <div class="task-name">期货 Dashboard 日度更新与部署</div>
+        <div class="task-desc">拉取 40 品种 Wind EDB 数据，重算 LOWESS+sigma 通道，推送 GitHub Pages</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="futures-dashboard"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card paused" data-task="steel-report">
+        <div class="card-top">
+          <div class="task-time">17:00</div>
+          <div class="badges"><span class="badge paused">已暂停</span></div>
+        </div>
+        <div class="task-name">钢材日报提醒</div>
+        <div class="task-desc">钢材日报生成提醒（当前暂停，不参与进度统计）</div>
+        <div class="card-foot">
+          <span class="status-dot off"></span> 暂停中
+        </div>
+      </div>
+
+      <div class="task-card daily" data-task="gzh-evening">
+        <div class="card-top">
+          <div class="task-time">17:30</div>
+          <div class="badges"><span class="badge daily">每天</span><span class="badge multi">6 板块</span></div>
+        </div>
+        <div class="task-name">公众号每日两报 · 完整三件套</div>
+        <div class="task-desc">板块每日总结（详细版）+ 公众号更新扫描 + 已更新文章总结，附未覆盖清单与明日提示</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="gzh-evening"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+      <div class="task-card daily" data-task="black-gzh-daily">
+        <div class="card-top">
+          <div class="task-time">18:00</div>
+          <div class="badges"><span class="badge daily">每天</span><span class="badge multi">5 公众号</span></div>
+        </div>
+        <div class="task-name">黑色商品公众号日报</div>
+        <div class="task-desc">Kallanish / 湖畔新言 / 中泰期货 / 世界金属导报 / 永安研究 → Word 日报（含数据表与来源口径）</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="black-gzh-daily"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 周度 ===== -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-emoji">📅</div>
+      <div class="section-title">周度任务</div>
+      <span class="section-count">1 项 · 每周日</span>
+    </div>
+    <div class="grid">
+
+      <div class="task-card sunday" data-task="weekly-broker">
+        <div class="card-top">
+          <div class="task-time">周日 10:00</div>
+          <div class="badges"><span class="badge sunday">每周日</span></div>
+        </div>
+        <div class="task-name">券商宏观固收研报观点周报</div>
+        <div class="task-desc">汇总本周券商宏观固收研报观点，生成周度观点报告</div>
+        <div class="card-foot">
+          <span class="status-dot on"></span> 运行中
+          <label class="check-wrap"><input type="checkbox" data-task="weekly-broker"><span class="check-box"></span><span class="check-label">完成</span></label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    数据来源：WorkBuddy 自动化任务配置 · 完成状态按日期保存在本机浏览器 · 更新时间：2026-08-19 15:15
+  </div>
+
+</div>
+
+<script>
+  const COUNTABLE_TASKS = [
+    'broker-morning','gzh-morning','huatai-estate','ima-sync','black-translate',
+    'cicc-estate','doc-archive-am','doc-archive-pm','black-translate-summary',
+    'futures-dashboard','gzh-evening','black-gzh-daily','weekly-broker'
+  ];
+
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  const STORE_KEY = 'taskboard-done-' + todayStr();
+
+  function loadDone() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
+    catch(e) { return {}; }
+  }
+  function saveDone(state) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  }
+
+  function render() {
+    const state = loadDone();
+    let doneCount = 0;
+    COUNTABLE_TASKS.forEach(id => {
+      const isDone = !!state[id];
+      if (isDone) doneCount++;
+      // 卡片状态
+      const card = document.querySelector('.task-card[data-task="' + id + '"]');
+      if (card) {
+        card.classList.toggle('done', isDone);
+        const cb = card.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = isDone;
+        const wrap = card.querySelector('.check-wrap');
+        if (wrap) wrap.classList.toggle('done', isDone);
+      }
+    });
+    const total = COUNTABLE_TASKS.length;
+    const pct = total ? Math.round(doneCount / total * 100) : 0;
+    document.getElementById('progressNum').innerHTML = '<b>' + doneCount + '</b> / ' + total;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('statDone').textContent = doneCount;
+    document.getElementById('statTodo').textContent = total - doneCount;
+  }
+
+  // 事件绑定
+  document.querySelectorAll('.check-wrap input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const state = loadDone();
+      state[this.dataset.task] = this.checked;
+      saveDone(state);
+      render();
+    });
+  });
+
+  function markAllDone() {
+    const state = {};
+    COUNTABLE_TASKS.forEach(id => state[id] = true);
+    saveDone(state);
+    render();
+  }
+  function clearAll() {
+    localStorage.removeItem(STORE_KEY);
+    render();
+  }
+
+  // 日期显示
+  const now = new Date();
+  const week = ['日','一','二','三','四','五','六'][now.getDay()];
+  document.getElementById('dateChip').textContent =
+    '📅 ' + now.getFullYear() + '年' + String(now.getMonth()+1).padStart(2,'0') + '月' + String(now.getDate()).padStart(2,'0') + '日 星期' + week;
+
+  render();
+</script>
+
+</body>
+</html>
