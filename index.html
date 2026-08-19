@@ -67,6 +67,28 @@
     box-shadow: var(--shadow);
   }
 
+  /* ===== Service Banner ===== */
+  .service-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    background: var(--amber-bg);
+    border: 1px solid #f3d9a4;
+    color: #92400e;
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .service-banner.ok { background: var(--green-bg); border-color: #b7e3d2; color: #065f46; }
+  .service-banner .btn-mini {
+    font-size: 12px; font-weight: 600;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1px solid currentColor;
+    background: transparent; color: inherit;
+    cursor: pointer; font-family: inherit;
+  }
+  .service-banner .btn-mini:hover { background: rgba(0,0,0,.06); }
+
   /* ===== Progress ===== */
   .progress-card {
     background: var(--card);
@@ -191,6 +213,7 @@
     transition: transform .15s ease, box-shadow .15s ease;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
   }
   .task-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(20,30,50,.1); }
   .task-card::before {
@@ -248,6 +271,16 @@
   .status-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
   .status-dot.off { background: var(--gray); box-shadow: 0 0 0 3px var(--gray-bg); }
 
+  /* Folder hint */
+  .folder-hint {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--blue);
+    background: var(--blue-bg);
+    padding: 2px 8px; border-radius: 999px;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
   /* Checkbox */
   .check-wrap {
     display: inline-flex; align-items: center; gap: 6px;
@@ -278,6 +311,23 @@
   .check-wrap.done { border-color: var(--green); color: var(--green); background: var(--green-bg); }
   .check-label { font-size: 12px; }
 
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1e2430; color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .25s ease;
+    z-index: 999;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
   .footer {
     margin-top: 30px; text-align: center;
     font-size: 12px; color: var(--text-sub);
@@ -304,10 +354,16 @@
       <div class="logo">⚙️</div>
       <div>
         <h1>自动化任务工作台</h1>
-        <div class="sub">每日研究与数据归档 · 全天任务总览</div>
+        <div class="sub">点击卡片即可打开对应产出文件夹 · 勾选标记今日完成</div>
       </div>
     </div>
     <div class="date-chip" id="dateChip">📅 加载中…</div>
+  </div>
+
+  <!-- Service Banner -->
+  <div class="service-banner" id="serviceBanner">
+    <span id="serviceMsg">🔌 正在检查本地服务状态…</span>
+    <button class="btn-mini" onclick="checkService(true)">重新检测</button>
   </div>
 
   <!-- Progress -->
@@ -349,7 +405,7 @@
     <div class="item"><span class="chip-dot weekday"></span> 工作日（周一~五）</div>
     <div class="item"><span class="chip-dot sunday"></span> 周一~周六</div>
     <div class="item"><span class="chip-dot paused"></span> 已暂停（不参与进度）</div>
-    <div class="item">✅ 点击卡片上的「完成」标记今日状态</div>
+    <div class="item">👆 点击卡片打开产出文件夹 · ✅ 勾选标记完成</div>
   </div>
 
   <!-- ===== 晨间 ===== -->
@@ -361,94 +417,101 @@
     </div>
     <div class="grid">
 
-      <div class="task-card sunday" data-task="broker-morning">
+      <div class="task-card sunday" data-task="broker-morning" onclick="openFolder('broker-morning')">
         <div class="card-top">
           <div class="task-time">08:30</div>
           <div class="badges"><span class="badge sunday">周一~六</span></div>
         </div>
         <div class="task-name">每日券商宏观固收日报（早间版）</div>
         <div class="task-desc">汇总券商宏观与固收研报观点，生成早间日报</div>
+        <div class="folder-hint">📁 券商周报总结</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="broker-morning"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="broker-morning"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card daily" data-task="gzh-morning">
+      <div class="task-card daily" data-task="gzh-morning" onclick="openFolder('gzh-morning')">
         <div class="card-top">
           <div class="task-time">08:30</div>
           <div class="badges"><span class="badge daily">每天</span><span class="badge multi">6 板块</span></div>
         </div>
         <div class="task-name">公众号每日两报 · 早报</div>
         <div class="task-desc">隔夜海外 + 夜盘期货 + 盘前日历 + 板块提示，覆盖钢铁/宏观/固收/地产/期货/海外</div>
+        <div class="folder-hint">📁 公众号每日总结</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="gzh-morning"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="gzh-morning"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card weekday" data-task="huatai-estate">
+      <div class="task-card weekday" data-task="huatai-estate" onclick="openFolder('huatai-estate')">
         <div class="card-top">
           <div class="task-time">09:00</div>
           <div class="badges"><span class="badge weekday">工作日</span></div>
         </div>
         <div class="task-name">华泰地产邮件自动入库</div>
         <div class="task-desc">自动抓取华泰地产研报邮件并入库整理</div>
+        <div class="folder-hint">📁 下载目录</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="huatai-estate"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="huatai-estate"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card daily" data-task="ima-sync">
+      <div class="task-card daily" data-task="ima-sync" onclick="openFolder('ima-sync')">
         <div class="card-top">
           <div class="task-time">09:00</div>
           <div class="badges"><span class="badge daily">每天</span></div>
         </div>
         <div class="task-name">ima 知识库本地每日同步</div>
         <div class="task-desc">将 ima 知识库内容同步到本地目录</div>
+        <div class="folder-hint">📁 ima_backup</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="ima-sync"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="ima-sync"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card daily" data-task="black-translate">
+      <div class="task-card daily" data-task="black-translate" onclick="openFolder('black-translate')">
         <div class="card-top">
           <div class="task-time">09:00<small>起</small></div>
           <div class="badges"><span class="badge daily">每天</span><span class="badge hourly">整点 ×9</span></div>
         </div>
         <div class="task-name">黑色翻译自动处理</div>
         <div class="task-desc">每小时自动处理黑色系翻译任务（09:00 – 17:00 整点触发，共 9 次）</div>
+        <div class="folder-hint">📁 黑色翻译/中文</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="black-translate"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="black-translate"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card weekday" data-task="cicc-estate">
+      <div class="task-card weekday" data-task="cicc-estate" onclick="openFolder('cicc-estate')">
         <div class="card-top">
           <div class="task-time">09:10</div>
           <div class="badges"><span class="badge weekday">工作日</span></div>
         </div>
         <div class="task-name">中金地产数据库自动入库</div>
         <div class="task-desc">自动抓取中金地产数据库并入库更新</div>
+        <div class="folder-hint">📁 下载目录</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="cicc-estate"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="cicc-estate"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card daily" data-task="doc-archive-am">
+      <div class="task-card daily" data-task="doc-archive-am" onclick="openFolder('doc-archive-am')">
         <div class="card-top">
           <div class="task-time">10:00</div>
           <div class="badges"><span class="badge daily">每天</span></div>
         </div>
         <div class="task-name">中文文档归档 + 总结（上午）</div>
         <div class="task-desc">整理归档中文文档并生成总结（上午批次）</div>
+        <div class="folder-hint">📁 ai总结</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="doc-archive-am"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="doc-archive-am"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
@@ -464,42 +527,45 @@
     </div>
     <div class="grid">
 
-      <div class="task-card daily" data-task="doc-archive-pm">
+      <div class="task-card daily" data-task="doc-archive-pm" onclick="openFolder('doc-archive-pm')">
         <div class="card-top">
           <div class="task-time">16:30</div>
           <div class="badges"><span class="badge daily">每天</span></div>
         </div>
         <div class="task-name">中文文档归档 + 总结（下午）</div>
         <div class="task-desc">整理归档中文文档并生成总结（下午批次）</div>
+        <div class="folder-hint">📁 ai总结</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="doc-archive-pm"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="doc-archive-pm"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card weekday" data-task="black-translate-summary">
+      <div class="task-card weekday" data-task="black-translate-summary" onclick="openFolder('black-translate-summary')">
         <div class="card-top">
           <div class="task-time">16:40</div>
           <div class="badges"><span class="badge weekday">工作日</span></div>
         </div>
         <div class="task-name">黑色翻译每日总结</div>
         <div class="task-desc">汇总当日黑色翻译处理结果，生成日度总结</div>
+        <div class="folder-hint">📁 黑色翻译/中文</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="black-translate-summary"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="black-translate-summary"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card weekday" data-task="futures-dashboard">
+      <div class="task-card weekday" data-task="futures-dashboard" onclick="openFolder('futures-dashboard')">
         <div class="card-top">
           <div class="task-time">17:00</div>
           <div class="badges"><span class="badge weekday">工作日</span></div>
         </div>
         <div class="task-name">期货 Dashboard 日度更新与部署</div>
         <div class="task-desc">拉取 40 品种 Wind EDB 数据，重算 LOWESS+sigma 通道，推送 GitHub Pages</div>
+        <div class="folder-hint">📁 dashboard 数据目录</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="futures-dashboard"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="futures-dashboard"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
@@ -515,29 +581,31 @@
         </div>
       </div>
 
-      <div class="task-card daily" data-task="gzh-evening">
+      <div class="task-card daily" data-task="gzh-evening" onclick="openFolder('gzh-evening')">
         <div class="card-top">
           <div class="task-time">17:30</div>
           <div class="badges"><span class="badge daily">每天</span><span class="badge multi">6 板块</span></div>
         </div>
         <div class="task-name">公众号每日两报 · 完整三件套</div>
         <div class="task-desc">板块每日总结（详细版）+ 公众号更新扫描 + 已更新文章总结，附未覆盖清单与明日提示</div>
+        <div class="folder-hint">📁 公众号每日总结</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="gzh-evening"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="gzh-evening"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
-      <div class="task-card daily" data-task="black-gzh-daily">
+      <div class="task-card daily" data-task="black-gzh-daily" onclick="openFolder('black-gzh-daily')">
         <div class="card-top">
           <div class="task-time">18:00</div>
           <div class="badges"><span class="badge daily">每天</span><span class="badge multi">5 公众号</span></div>
         </div>
         <div class="task-name">黑色商品公众号日报</div>
         <div class="task-desc">Kallanish / 湖畔新言 / 中泰期货 / 世界金属导报 / 永安研究 → Word 日报（含数据表与来源口径）</div>
+        <div class="folder-hint">📁 黑色商品日报工作区</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="black-gzh-daily"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="black-gzh-daily"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
@@ -553,16 +621,17 @@
     </div>
     <div class="grid">
 
-      <div class="task-card sunday" data-task="weekly-broker">
+      <div class="task-card sunday" data-task="weekly-broker" onclick="openFolder('weekly-broker')">
         <div class="card-top">
           <div class="task-time">周日 10:00</div>
           <div class="badges"><span class="badge sunday">每周日</span></div>
         </div>
         <div class="task-name">券商宏观固收研报观点周报</div>
         <div class="task-desc">汇总本周券商宏观固收研报观点，生成周度观点报告</div>
+        <div class="folder-hint">📁 券商周报总结</div>
         <div class="card-foot">
           <span class="status-dot on"></span> 运行中
-          <label class="check-wrap"><input type="checkbox" data-task="weekly-broker"><span class="check-box"></span><span class="check-label">完成</span></label>
+          <label class="check-wrap" onclick="event.stopPropagation()"><input type="checkbox" data-task="weekly-broker"><span class="check-box"></span><span class="check-label">完成</span></label>
         </div>
       </div>
 
@@ -570,12 +639,15 @@
   </div>
 
   <div class="footer">
-    数据来源：WorkBuddy 自动化任务配置 · 完成状态按日期保存在本机浏览器 · 更新时间：2026-08-19 15:15
+    数据来源：WorkBuddy 自动化任务配置 · 点击卡片打开产出文件夹（需本地服务运行） · 2026-08-19
   </div>
 
 </div>
 
+<div id="toast"></div>
+
 <script>
+  const SERVICE_URL = 'http://127.0.0.1:8642';
   const COUNTABLE_TASKS = [
     'broker-morning','gzh-morning','huatai-estate','ima-sync','black-translate',
     'cicc-estate','doc-archive-am','doc-archive-pm','black-translate-summary',
@@ -602,7 +674,6 @@
     COUNTABLE_TASKS.forEach(id => {
       const isDone = !!state[id];
       if (isDone) doneCount++;
-      // 卡片状态
       const card = document.querySelector('.task-card[data-task="' + id + '"]');
       if (card) {
         card.classList.toggle('done', isDone);
@@ -620,15 +691,60 @@
     document.getElementById('statTodo').textContent = total - doneCount;
   }
 
-  // 事件绑定
+  // 完成勾选（不触发卡片点击）
   document.querySelectorAll('.check-wrap input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', function() {
+    cb.addEventListener('change', function(e) {
+      e.stopPropagation();
       const state = loadDone();
       state[this.dataset.task] = this.checked;
       saveDone(state);
       render();
     });
   });
+
+  // 打开产出文件夹
+  function openFolder(task) {
+    const cb = document.querySelector('.check-wrap input[data-task="' + task + '"]');
+    // 若事件源是勾选区域则忽略
+    if (window.event && window.event.target.closest && window.event.target.closest('.check-wrap')) return;
+    fetch(SERVICE_URL + '/open?task=' + encodeURIComponent(task))
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) showToast('📁 已打开: ' + d.path);
+        else showToast('⚠️ ' + d.error);
+      })
+      .catch(() => showToast('⚠️ 本地服务未运行\n请先双击「启动任务工作台.bat」，或点击顶部"重新检测"'));
+  }
+
+  // 服务状态检测
+  function checkService(manual) {
+    const banner = document.getElementById('serviceBanner');
+    const msg = document.getElementById('serviceMsg');
+    fetch(SERVICE_URL + '/health')
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          banner.className = 'service-banner ok';
+          msg.textContent = '✅ 本地服务运行中 · 点击任意任务卡片即可打开产出文件夹';
+        } else {
+          banner.className = 'service-banner';
+          msg.textContent = '⚠️ 服务异常';
+        }
+      })
+      .catch(() => {
+        banner.className = 'service-banner';
+        msg.textContent = '🔌 本地服务未启动 · 请先双击「启动任务工作台.bat」（在工作台同目录），再点"重新检测"';
+      });
+  }
+
+  let toastTimer = null;
+  function showToast(text) {
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
 
   function markAllDone() {
     const state = {};
@@ -648,6 +764,7 @@
     '📅 ' + now.getFullYear() + '年' + String(now.getMonth()+1).padStart(2,'0') + '月' + String(now.getDate()).padStart(2,'0') + '日 星期' + week;
 
   render();
+  checkService(false);
 </script>
 
 </body>
